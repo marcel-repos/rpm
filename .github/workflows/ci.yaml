@@ -27,16 +27,6 @@ jobs:
           mkdir -p repo/all/x86_64/pool
           find -iname '*.rpm' -type f -exec bash -c "mkdir -p \`dirname repo/all/x86_64/pool/{}\` && cp {} repo/all/x86_64/pool/{}" \;
 
-      - name: Update Metadata
-        run: |
-          if test -f "repo/all/x86_64/repodata"; then
-            docker run --rm -v "${PWD}/repo/all/x86_64:/pwd" --workdir /pwd fedora \
-              bash -c "dnf install -y createrepo && createrepo -d /pwd"
-          else
-            docker run --rm -v "${PWD}/repo/all/x86_64:/pwd" --workdir /pwd fedora \
-              bash -c "dnf install -y createrepo && createrepo -d --update /pwd"
-          fi
-
       - name: Import GPG Key
         uses: crazy-max/ghaction-import-gpg@v3
         with:
@@ -49,10 +39,21 @@ jobs:
           docker run --rm -v "${PWD}/repo:/pwd" -v "${HOME}/.gnupg:/root/.gnupg" -v "${HOME}/.rpmmacros:/root/.rpmmacros" --workdir /pwd fedora \
             bash -c "dnf install -y findutils rpm-sign && find -iname '*.rpm' -type f -exec rpm --addsign {} \;"
 
+      - name: Update Metadata
+        run: |
+          if test -f "repo/all/x86_64/repodata"; then
+            docker run --rm -v "${PWD}/repo/all/x86_64:/pwd" --workdir /pwd fedora \
+              bash -c "dnf install -y createrepo && createrepo -d /pwd"
+          else
+            docker run --rm -v "${PWD}/repo/all/x86_64:/pwd" --workdir /pwd fedora \
+              bash -c "dnf install -y createrepo && createrepo -d --update /pwd"
+          fi
+
       - name: Copy README.md
         run: |
           cp README.md repo/README.md
           cp LICENSE repo/LICENSE
+          cp -r config repo
 
       - name: Deploy Repository
         uses: JamesIves/github-pages-deploy-action@4.1.4

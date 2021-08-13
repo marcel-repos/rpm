@@ -5,14 +5,11 @@
 You have to add the repository to the package sources:
 
 ```bash
-cat << EOF > /etc/yum.repos.d/m4rc3l.repo
-[m4rc3l.de]
-name=m4rc3l.de
-baseurl=https://rpm.m4rc3l.de/all/$basearch
-enabled=1
-gpgcheck=1
-gpgkey=https://m4rc3l.de/static/rpm-repo.pem
-EOF
+sudo dnf -y install dnf-plugins-core
+
+sudo dnf config-manager \
+  --add-repo \
+  https://rpm.m4rc3l.de/config/all.repo
 ```
 
 ## Packages
@@ -20,6 +17,10 @@ EOF
 ```bash
 sudo dnf install <package>
 ```
+
+When you install the first package, you have to verify the GPG key.
+<br>
+The fingerprint is `C907 8A5C CE5C 9256 E175 C0BD 94C7 2B06 F259 2DD0`.
 
 | Package                 | Description                                               | Reposetory                                                                                  |
 | ----------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------- |

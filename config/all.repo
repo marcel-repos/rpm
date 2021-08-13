@@ -1,0 +1,6 @@
+[m4rc3l.de]
+name=m4rc3l.de
+baseurl=https://rpm.m4rc3l.de/all/$basearch
+enabled=1
+gpgcheck=1
+gpgkey=https://m4rc3l.de/static/rpm-repo.pem
