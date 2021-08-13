@@ -18,13 +18,14 @@ jobs:
 
           if test -f "repo.tar.gz"; then
             tar xzf repo.tar.gz --strip-components 1 -C repo
+            rm repo.tar.gz
           fi
 
       - name: Update Packages
         run: |
           rm -rf repo/all/x86_64/pool
           mkdir -p repo/all/x86_64/pool
-          find -iname '*.rpm' -type f -exec mv {} repo/all/x86_64/pool/{} \;
+          find -iname '*.rpm' -type f -exec bash -c "mkdir -p \`dirname repo/all/x86_64/pool/{}\` && cp {} repo/all/x86_64/pool/{}" \;
 
       - name: Update Metadata
         run: |
@@ -44,8 +45,9 @@ jobs:
 
       - name: Sign Repository
         run: |
-          docker run --rm -v "${PWD}/repo:/pwd" -v "${HOME}/.gnupg:/root/.gnupg" --workdir /pwd fedora \
-            bash -c "dnf install -y findutils && find -iname '*.rpm' -type f -exec rpm --addsign {} \;"
+          echo "%_gpg_name Marcel's Red Hat Enterprise Linux Repository <repo@m4rc3l.de>" > ~/.rpmmacros
+          docker run --rm -v "${PWD}/repo:/pwd" -v "${HOME}/.gnupg:/root/.gnupg" -v "${HOME}/.rpmmacros:/root/.rpmmacros" --workdir /pwd fedora \
+            bash -c "dnf install -y findutils rpm-sign && find -iname '*.rpm' -type f -exec rpm --addsign {} \;"
 
       - name: Copy README.md
         run: |
