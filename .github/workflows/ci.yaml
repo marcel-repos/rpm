@@ -11,21 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Pull Current Repository
-        run: |
-          mkdir repo
-          wget -O repo.tar.gz https://github.com/marcel-repos/rpm/archive/refs/heads/gh-pages.tar.gz || rm repo.tar.gz
-
-          if test -f "repo.tar.gz"; then
-            tar xzf repo.tar.gz --strip-components 1 -C repo
-            rm repo.tar.gz
-          fi
-
-      - name: Update Packages
-        run: |
-          rm -rf repo/all/x86_64/pool
-          mkdir -p repo/all/x86_64/pool
-          find -iname '*.rpm' -type f -exec bash -c "mkdir -p \`dirname repo/all/x86_64/pool/{}\` && cp {} repo/all/x86_64/pool/{}" \;
+      - name: Download Current Repository
+        uses: actions/checkout@v2
+        with:
+          path: ./repo
+          ref: gh-pages
 
       - name: Import GPG Key
         uses: crazy-max/ghaction-import-gpg@v3
@@ -33,23 +23,15 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Sign Repository
-        run: |
-          echo "%_gpg_name Marcel's Red Hat Enterprise Linux Repository <repo@m4rc3l.de>" > ~/.rpmmacros
-          docker run --rm -v "${PWD}/repo:/pwd" -v "${HOME}/.gnupg:/root/.gnupg" -v "${HOME}/.rpmmacros:/root/.rpmmacros" --workdir /pwd fedora \
-            bash -c "dnf install -y findutils rpm-sign && find -iname '*.rpm' -type f -exec rpm --addsign {} \;"
+      - name: Build Repo
+        run: docker run --rm
+          -v "${PWD}/repo:/repo"
+          -v "${PWD}:/pool"
+          -v "${HOME}/.gnupg:/root/.gnupg"
+          -e GPG_NAME="Marcel's Red Hat Enterprise Linux Repository <repo@m4rc3l.de>"
+          marcelcoding/rpm-manager:latest
 
-      - name: Update Metadata
-        run: |
-          if test -f "repo/all/x86_64/repodata"; then
-            docker run --rm -v "${PWD}/repo/all/x86_64:/pwd" --workdir /pwd fedora \
-              bash -c "dnf install -y createrepo && createrepo -d /pwd"
-          else
-            docker run --rm -v "${PWD}/repo/all/x86_64:/pwd" --workdir /pwd fedora \
-              bash -c "dnf install -y createrepo && createrepo -d --update /pwd"
-          fi
-
-      - name: Copy README.md
+      - name: Copy README.md, LICENSE, ...
         run: |
           cp README.md repo/README.md
           cp LICENSE repo/LICENSE 
@@ -67,6 +49,6 @@ jobs:
 
           token: ${{ github.token }}
           # https://github.com/crazy-max/ghaction-github-pages/blob/dev/src/git.ts#L3-L8
-          commit-message: Deploy ${{ github.repository }}
+          commit-message: Deployed Rpm Repository
           git-config-name: GitHub <noreply@github.com>
           git-config-email: 41898282+github-actions[bot]@users.noreply.github.com
