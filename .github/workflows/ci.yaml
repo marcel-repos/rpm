@@ -17,6 +17,7 @@ jobs:
           repository: ${{ github.repository_owner }}/rpm.m4rc3l.de
           path: ./repo
           ref: main
+          token: ${{ secrets.GH_PAT }}
 
       - name: Import GPG Key
         uses: crazy-max/ghaction-import-gpg@v4
